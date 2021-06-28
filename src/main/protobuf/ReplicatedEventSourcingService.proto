@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "akka.persistence.proto";
+
+package akka.persistence;
+
+service ReplicatedEventSourcingService {
+    rpc EventsByPersistenceId(EventsByPersistenceIdRequest) returns (stream EventEnvelope) {}
+}
+
+message EventsByPersistenceIdRequest {
+    string persistence_id = 1;
+    int64 from_seq_nr = 2;
+}
+
+message EventEnvelope {
+    int64 seq_nr = 1;
+    bytes event = 2;
+    int32 event_ser_id = 3;
+    string event_ser_manifest = 4;
+    bytes metadata = 5;
+    int32 metadata_ser_id = 6;
+    string metadata_ser_manifest = 7;
+    int64 timestamp = 8;
+}

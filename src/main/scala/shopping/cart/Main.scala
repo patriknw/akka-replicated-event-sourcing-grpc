@@ -6,6 +6,8 @@ import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.management.scaladsl.AkkaManagement
 import org.slf4j.LoggerFactory
 import scala.util.control.NonFatal
+
+import akka.persistence.ReplicatedEventSourcingServiceImpl
 import shopping.cart.repository.ItemPopularityRepositoryImpl
 import shopping.cart.repository.ScalikeJdbcSetup
 
@@ -46,7 +48,16 @@ object Main {
       system.settings.config.getInt("shopping-cart-service.grpc.port")
     val grpcService =
       new ShoppingCartServiceImpl(system, itemPopularityRepository)
-    ShoppingCartServer.start(grpcInterface, grpcPort, system, grpcService)
+
+    val replicatedEventSourcingService = new ReplicatedEventSourcingServiceImpl(
+      system)
+
+    ShoppingCartServer.start(
+      grpcInterface,
+      grpcPort,
+      system,
+      grpcService,
+      replicatedEventSourcingService)
   }
 
 }
