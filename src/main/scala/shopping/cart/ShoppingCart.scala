@@ -177,9 +177,16 @@ object ShoppingCart {
         val selectedTag = tags(i)
 
         ReplicatedEventSourcing.perReplicaJournalConfig(
-          ReplicationId(EntityKey.name, entityContext.entityId, ReplicaId(Cluster(system).selfMember.dataCenter)),
-          Map(DCA -> "jdbc-read-journal-a", DCB -> "jdbc-read-journal-b")) { replicationContext =>
-          ShoppingCart(entityContext.entityId, replicationContext.persistenceId, selectedTag)
+          ReplicationId(
+            EntityKey.name,
+            entityContext.entityId,
+            ReplicaId(Cluster(system).selfMember.dataCenter)),
+          Map(DCA -> "read-journal-a", DCB -> "read-journal-b")) {
+          replicationContext =>
+            ShoppingCart(
+              entityContext.entityId,
+              replicationContext.persistenceId,
+              selectedTag)
         }
     }
     ClusterSharding(system).init(Entity(EntityKey)(behaviorFactory))
@@ -188,7 +195,10 @@ object ShoppingCart {
   // end::tagging[]
 
   // tag::withTagger[]
-  def apply(cartId: String, persistenceId: PersistenceId, projectionTag: String): EventSourcedBehavior[Command, Event, State] = {
+  def apply(
+      cartId: String,
+      persistenceId: PersistenceId,
+      projectionTag: String): EventSourcedBehavior[Command, Event, State] = {
     EventSourcedBehavior
       .withEnforcedReplies[Command, Event, State](
         persistenceId,
