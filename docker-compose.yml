@@ -1,9 +1,17 @@
 version: '2.2'
 services:
-  postgres-db:
+  postgres-db-a:
     image: postgres:latest
     ports:
       - 5432:5432
+    environment:
+      POSTGRES_USER: shopping-cart
+      POSTGRES_PASSWORD: shopping-cart
+
+  postgres-db-b:
+    image: postgres:latest
+    ports:
+      - 5442:5432
     environment:
       POSTGRES_USER: shopping-cart
       POSTGRES_PASSWORD: shopping-cart
@@ -17,3 +25,4 @@ services:
       POSTGRES_DB: shopping-cart
       POSTGRES_USER: shopping-cart
       POSTGRES_PASSWORD: shopping-cart
+
