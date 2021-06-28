@@ -10,6 +10,10 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.cluster.typed.Cluster
+import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
+import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 // tag::importEntityContext[]
 import akka.cluster.sharding.typed.scaladsl.EntityContext
 // end::importEntityContext[]
@@ -161,13 +165,22 @@ object ShoppingCart {
 
   val tags = Vector.tabulate(5)(i => s"carts-$i")
 
+  val DCA = ReplicaId("DC-A")
+  val DCB = ReplicaId("DC-B")
+  val AllReplicas = Set(DCA, DCB)
+
   // tag::howto-write-side-without-role[]
   def init(system: ActorSystem[_]): Unit = {
     val behaviorFactory: EntityContext[Command] => Behavior[Command] = {
       entityContext =>
         val i = math.abs(entityContext.entityId.hashCode % tags.size)
         val selectedTag = tags(i)
-        ShoppingCart(entityContext.entityId, selectedTag)
+
+        ReplicatedEventSourcing.perReplicaJournalConfig(
+          ReplicationId(EntityKey.name, entityContext.entityId, ReplicaId(Cluster(system).selfMember.dataCenter)),
+          Map(DCA -> "jdbc-read-journal-a", DCB -> "jdbc-read-journal-b")) { replicationContext =>
+          ShoppingCart(entityContext.entityId, replicationContext.persistenceId, selectedTag)
+        }
     }
     ClusterSharding(system).init(Entity(EntityKey)(behaviorFactory))
   }
@@ -175,10 +188,10 @@ object ShoppingCart {
   // end::tagging[]
 
   // tag::withTagger[]
-  def apply(cartId: String, projectionTag: String): Behavior[Command] = {
+  def apply(cartId: String, persistenceId: PersistenceId, projectionTag: String): EventSourcedBehavior[Command, Event, State] = {
     EventSourcedBehavior
       .withEnforcedReplies[Command, Event, State](
-        persistenceId = PersistenceId(EntityKey.name, cartId),
+        persistenceId,
         emptyState = State.empty,
         commandHandler =
           (state, command) => handleCommand(cartId, state, command),

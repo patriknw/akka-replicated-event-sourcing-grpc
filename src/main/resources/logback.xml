@@ -12,6 +12,9 @@
         <appender-ref ref="STDOUT" />
     </appender>
 
+    <logger name="akka.persistence" level="DEBUG" />
+    <logger name="shopping" level="DEBUG" />
+
     <root level="INFO">
         <appender-ref ref="ASYNC"/>
     </root>
